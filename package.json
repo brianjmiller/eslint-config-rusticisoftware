@@ -3,6 +3,13 @@
   "version": "3.0.0",
   "description": "eslint configuration used by Rustici Software (mostly)",
   "main": "index.js",
+  "scripts": {
+    "test": "node tests/run-rule-tests.js",
+    "test:verbose": "npx mocha tests/lib/**/*.js --reporter spec",
+    "test:style": "npx mocha tests/lib/style/*.js",
+    "test:lint": "npx mocha tests/lib/lint/*.js",
+    "test:generate": "node tests/generate-rule-tests.js"
+  },
   "keywords": [
     "eslint",
     "eslintconfig"
@@ -11,5 +18,9 @@
   "license": "ISC",
   "peerDependencies": {
     "eslint": ">=8"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "mocha": "^10.0.0"
   }
 }
