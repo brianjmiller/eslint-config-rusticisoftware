@@ -1,6 +1,6 @@
 {
   "name": "@rusticisoftware/eslint-config",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "eslint configuration used by Rustici Software (mostly)",
   "main": "index.js",
   "scripts": {
@@ -17,10 +17,14 @@
   "author": "Support <support@rusticisoftware.com>",
   "license": "ISC",
   "peerDependencies": {
-    "eslint": ">=8"
+    "@eslint/js": ">=10",
+    "@stylistic/eslint-plugin": ">=4",
+    "eslint": ">=10"
   },
   "devDependencies": {
-    "eslint": "^8.57.1",
+    "@eslint/js": "^10.0.0",
+    "@stylistic/eslint-plugin": "^4.4.1",
+    "eslint": "^10.0.0",
     "mocha": "^10.0.0"
   }
 }
