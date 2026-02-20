@@ -93,17 +93,26 @@ const STYLISTIC_RULES = new Set([
     "yield-star-spacing",
 ]);
 
+const { LEGACY_TO_CURRENT } = require("./rule-mapping");
+
 // Rules that are linting (logic/best practices)
 // Everything else is a linting rule
 function categoriseRule(ruleName) {
-    return STYLISTIC_RULES.has(ruleName) ? "style" : "lint";
+    const mappedRule = LEGACY_TO_CURRENT[ruleName] || ruleName,
+        // Rules from @stylistic/eslint-plugin are prefixed with "@stylistic/"
+        bareName = mappedRule.startsWith("@stylistic/")
+            ? mappedRule.slice("@stylistic/".length)
+            : mappedRule;
+
+    return STYLISTIC_RULES.has(bareName) ? "style" : "lint";
 }
 
 // Get all rules from config
 function getAllRules() {
+    // index.js exports a flat-config array; rules live in the second element
     const config = require("../index.js");
 
-    return Object.keys(config.rules).sort();
+    return Object.keys(config[1].rules).sort();
 }
 
 // Categorise all rules

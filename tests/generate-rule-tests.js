@@ -11,7 +11,50 @@
 const fs = require("fs"),
     path = require("path"),
     { categoriseRule, getAllRules } = require("./categorise-rules.js"),
+    { LEGACY_TO_CURRENT, INTENTIONALLY_OMITTED } = require("./rule-mapping"),
     RULE_TEST_CASES = require("./rule-test-cases");
+
+const findRuleConfig = function (configArray, ruleName) {
+    if (!Array.isArray(configArray)) {
+        return undefined;
+    }
+
+    for (const entry of configArray) {
+        if (entry && entry.rules && Object.prototype.hasOwnProperty.call(entry.rules, ruleName)) {
+            return entry.rules[ruleName];
+        }
+    }
+
+    return undefined;
+};
+
+const getLegacyRuleEntries = function () {
+    const libDir = path.join(__dirname, "lib"),
+        categories = ["style", "lint"];
+
+    if (!fs.existsSync(libDir)) {
+        return null;
+    }
+
+    const entries = categories.flatMap((category) => {
+        const categoryDir = path.join(libDir, category);
+
+        if (!fs.existsSync(categoryDir)) {
+            return [];
+        }
+
+        return fs.readdirSync(categoryDir)
+            .filter((file) => file.endsWith(".js"))
+            .map((file) => ({
+                ruleName: file
+                    .replace(/\.js$/u, "")
+                    .replace(/__/gu, "/"),
+                category,
+            }));
+    });
+
+    return entries.length > 0 ? entries : null;
+};
 
 /**
  * Serialise an object to JavaScript code without quotes on keys (single line)
@@ -38,19 +81,56 @@ const serialiseObject = function (obj) {
 };
 
 /**
+ * Map legacy parserOptions to flat-config languageOptions properties.
+ * - sourceType / ecmaVersion map directly to languageOptions
+ * - ecmaFeatures maps to languageOptions.parserOptions.ecmaFeatures
+ * Returns a string of additional key: value pairs for a languageOptions object.
+ */
+const buildLanguageOptionsStr = function (parserOptions) {
+    const parts = [];
+
+    if (parserOptions.sourceType !== undefined) {
+        parts.push(`sourceType: ${JSON.stringify(parserOptions.sourceType)}`);
+    }
+
+    if (parserOptions.ecmaVersion !== undefined) {
+        parts.push(`ecmaVersion: ${JSON.stringify(parserOptions.ecmaVersion)}`);
+    }
+
+    if (parserOptions.ecmaFeatures !== undefined) {
+        parts.push(
+            `parserOptions: { ecmaFeatures: ${serialiseObject(parserOptions.ecmaFeatures)} }`,
+        );
+    }
+
+    return parts.join(", ");
+};
+
+/**
  * Generate a test file for a single rule using Linter.verify()
  */
 const generateTestFile = function (ruleName, category) {
+    // index.js exports a flat-config array; rules live in the second element
     const config = require("../index.js"),
-        ruleConfig = config.rules[ruleName],
-        // Check if rule is "off"
+        mappedRuleName = LEGACY_TO_CURRENT[ruleName] || ruleName,
+        ruleConfig = findRuleConfig(config, mappedRuleName),
+        // Rules intentionally omitted from the new config (were "off" before)
+        // are treated the same as "off" — no regression, no missing-rule failure.
+        isMissing = ruleConfig === undefined && !INTENTIONALLY_OMITTED.has(ruleName),
+        // Check if rule is "off" (explicit entry) or intentionally omitted
         isOff =
+            INTENTIONALLY_OMITTED.has(ruleName) ||
             ruleConfig === "off" ||
             (Array.isArray(ruleConfig) && ruleConfig[0] === "off"),
-        testCases = RULE_TEST_CASES[ruleName] || {
-            valid: ['"use strict";\n\nconst validTest = 1;\n'],
-            invalid: [{ code: "const invalidTest = 1;", errors: 1 }],
-        },
+        // Look up test cases by full name, then by bare name (without plugin prefix)
+        bareName = ruleName.includes("/")
+            ? ruleName.slice(ruleName.indexOf("/") + 1)
+            : ruleName,
+        testCases = RULE_TEST_CASES[ruleName] ||
+            RULE_TEST_CASES[bareName] || {
+                valid: ['"use strict";\n\nconst validTest = 1;\n'],
+                invalid: [{ code: "const invalidTest = 1;", errors: 1 }],
+            },
         // Generate valid test cases
         validTestsCode = testCases.valid
             .map((test, index) => {
@@ -58,35 +138,27 @@ const generateTestFile = function (ruleName, category) {
                     hasCustomParser =
                         typeof test === "object" && test.parserOptions,
                     configVar = hasCustomParser ? "testConfig" : "config",
-                    // Serialise parserOptions without quotes on keys
-                    parserOptionsStr = hasCustomParser
-                        ? Object.entries(test.parserOptions)
-                              .map(
-                                  ([key, val]) =>
-                                      `${key}: ${serialiseObject(val)}`,
-                              )
-                              .join(", ")
+                    // Map legacy parserOptions keys to flat-config languageOptions
+                    languageOptionsStr = hasCustomParser
+                        ? buildLanguageOptionsStr(test.parserOptions)
                         : "",
                     testSetup = hasCustomParser
-                        ? `const testConfig = {
+                        ? `const testConfig = [
                     ...config,
-                    parserOptions: {
-                        ...config.parserOptions,
-                        ${parserOptionsStr}
-                    }
-                },
+                    { languageOptions: { ${languageOptionsStr} } }
+                ],
                 code = ${JSON.stringify(code)},`
                         : `const code = ${JSON.stringify(code)},`;
 
                 return `        it("valid case ${index + 1}", function () {
             ${testSetup}
                 messages = linter.verify(code, ${configVar}),
-                relevantMessages = messages.filter((msg) => msg.ruleId === "${ruleName}");
+                relevantMessages = messages.filter((msg) => msg.ruleId === "${mappedRuleName}");
 
             assert.strictEqual(
                 relevantMessages.length,
                 0,
-                \`Expected no errors for "${ruleName}", but got: \${relevantMessages.map((m) => m.message).join(", ")}\`
+                \`Expected no errors for "${mappedRuleName}", but got: \${relevantMessages.map((m) => m.message).join(", ")}\`
             );
         });`;
             })
@@ -107,35 +179,27 @@ const generateTestFile = function (ruleName, category) {
                     hasCustomParser =
                         typeof test === "object" && test.parserOptions,
                     configVar = hasCustomParser ? "testConfig" : "config",
-                    // Serialise parserOptions without quotes on keys
-                    parserOptionsStr = hasCustomParser
-                        ? Object.entries(test.parserOptions)
-                              .map(
-                                  ([key, val]) =>
-                                      `${key}: ${serialiseObject(val)}`,
-                              )
-                              .join(", ")
+                    // Map legacy parserOptions keys to flat-config languageOptions
+                    languageOptionsStr = hasCustomParser
+                        ? buildLanguageOptionsStr(test.parserOptions)
                         : "",
                     testSetup = hasCustomParser
-                        ? `const testConfig = {
+                        ? `const testConfig = [
                     ...config,
-                    parserOptions: {
-                        ...config.parserOptions,
-                        ${parserOptionsStr}
-                    }
-                },
+                    { languageOptions: { ${languageOptionsStr} } }
+                ],
                 code = ${JSON.stringify(code)},`
                         : `const code = ${JSON.stringify(code)},`;
 
                 return `        it("invalid case ${index + 1}", function () {
             ${testSetup}
                 messages = linter.verify(code, ${configVar}),
-                relevantMessages = messages.filter((msg) => msg.ruleId === "${ruleName}");
+                relevantMessages = messages.filter((msg) => msg.ruleId === "${mappedRuleName}");
 
             assert.ok(
                 // eslint-disable-next-line no-magic-numbers
                 relevantMessages.length >= ${expectedErrors},
-                \`Expected at least ${expectedErrors} error(s) for "${ruleName}", but got \${relevantMessages.length}\`
+                \`Expected at least ${expectedErrors} error(s) for "${mappedRuleName}", but got \${relevantMessages.length}\`
             );
         });`;
             })
@@ -148,16 +212,27 @@ const generateTestFile = function (ruleName, category) {
             ? `
     describe("rule is disabled", function () {
         it("should not report errors (rule is off)", function () {
-            // This rule is set to "off" in index.js
-            // Test that potentially violating code still passes
+            // This rule was "off" in the previous config and remains disabled
+            // (either explicitly set to "off" or intentionally omitted).
+            // Test that potentially violating code still passes.
             const testCode = ${JSON.stringify(testCases.invalid[0]?.code || "const test = 1;")},
                 messages = linter.verify(testCode, config),
-                relevantMessages = messages.filter((msg) => msg.ruleId === "${ruleName}");
+                relevantMessages = messages.filter((msg) => msg.ruleId === "${mappedRuleName}");
 
             assert.strictEqual(
                 relevantMessages.length,
                 0,
                 "Rule is off, should not report errors"
+            );
+        });
+    });`
+            : "",
+        missingRuleTestCode = isMissing
+            ? `
+    describe("missing rule", function () {
+        it("should have a configured rule entry", function () {
+            assert.fail(
+                "Expected rule to be configured but it was missing: ${mappedRuleName}",
             );
         });
     });`
@@ -170,20 +245,22 @@ const generateTestFile = function (ruleName, category) {
  * using Linter.verify() to ensure the configuration is correct.
  */
 
-const {Linter} = require("eslint"),
+ const {Linter} = require("eslint"),
     assert = require("assert"),
     baseConfig = require("../../../index.js"),
 
-    // Enhance config with necessary parserOptions for Linter.verify()
-    config = {
-        ...baseConfig,
-        parserOptions: {
-            ecmaVersion: 2021,
-            sourceType: "script"
-        }
-    };
+    // Extend the flat-config array with languageOptions for Linter.verify()
+     config = [
+         ...baseConfig,
+         {
+             languageOptions: {
+                 ecmaVersion: 2021,
+                 sourceType: "script",
+             },
+         }
+     ];
 
-describe("${ruleName}", function () {
+    describe("${ruleName}", function () {
     const linter = new Linter();
 
     describe("valid code", function () {
@@ -196,10 +273,15 @@ ${validTestsCode}
     describe("invalid code", function () {
 ${invalidTestsCode}
     });`
-    }${offTestCode}
+    }${offTestCode}${missingRuleTestCode}
 });
 `,
-        filePath = path.join(__dirname, "lib", category, `${ruleName}.js`);
+        filePath = path.join(
+            __dirname,
+            "lib",
+            category,
+            `${ruleName.replace(/\//gu, "__")}.js`,
+        );
 
     fs.writeFileSync(filePath, content);
     console.log(`Generated: ${category}/${ruleName}.js`);
@@ -209,18 +291,21 @@ ${invalidTestsCode}
  * Generate test files for all rules
  */
 const generateAllTests = function () {
-    const allRules = getAllRules();
+    const legacyEntries = getLegacyRuleEntries(),
+        ruleEntries = legacyEntries || getAllRules().map((ruleName) => ({
+            ruleName,
+            category: categoriseRule(ruleName),
+        }));
 
     let styleCount = 0,
         lintCount = 0,
         withCustomTests = 0;
 
     console.log(
-        `Generating Linter.verify() tests for ${allRules.length} rules...\n`,
+        `Generating Linter.verify() tests for ${ruleEntries.length} rules...\n`,
     );
 
-    allRules.forEach((ruleName) => {
-        const category = categoriseRule(ruleName);
+    ruleEntries.forEach(({ ruleName, category }) => {
 
         try {
             generateTestFile(ruleName, category);
@@ -248,7 +333,7 @@ const generateAllTests = function () {
     console.log(`Total tests: ${styleCount + lintCount}`);
     console.log(`Rules with custom test cases: ${withCustomTests}`);
     console.log(
-        `Rules with default test cases: ${allRules.length - withCustomTests}`,
+        `Rules with default test cases: ${ruleEntries.length - withCustomTests}`,
     );
 };
 
