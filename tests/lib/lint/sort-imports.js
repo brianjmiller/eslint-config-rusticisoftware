@@ -6,31 +6,30 @@
  * using Linter.verify() to ensure the configuration is correct.
  */
 
-const {Linter} = require("eslint"),
+ const {Linter} = require("eslint"),
     assert = require("assert"),
     baseConfig = require("../../../index.js"),
 
-    // Enhance config with necessary parserOptions for Linter.verify()
-    config = {
-        ...baseConfig,
-        parserOptions: {
-            ecmaVersion: 2021,
-            sourceType: "script"
-        }
-    };
+    // Extend the flat-config array with languageOptions for Linter.verify()
+     config = [
+         ...baseConfig,
+         {
+             languageOptions: {
+                 ecmaVersion: 2021,
+                 sourceType: "script",
+             },
+         }
+     ];
 
-describe("sort-imports", function () {
+    describe("sort-imports", function () {
     const linter = new Linter();
 
     describe("valid code", function () {
         it("valid case 1", function () {
-            const testConfig = {
+            const testConfig = [
                     ...config,
-                    parserOptions: {
-                        ...config.parserOptions,
-                        sourceType: "module"
-                    }
-                },
+                    { languageOptions: { sourceType: "module" } }
+                ],
                 code = "import {a, b} from \"mod\";",
                 messages = linter.verify(code, testConfig),
                 relevantMessages = messages.filter((msg) => msg.ruleId === "sort-imports");
@@ -45,13 +44,10 @@ describe("sort-imports", function () {
 
     describe("invalid code", function () {
         it("invalid case 1", function () {
-            const testConfig = {
+            const testConfig = [
                     ...config,
-                    parserOptions: {
-                        ...config.parserOptions,
-                        sourceType: "module"
-                    }
-                },
+                    { languageOptions: { sourceType: "module" } }
+                ],
                 code = "import {b, a} from \"mod\";",
                 messages = linter.verify(code, testConfig),
                 relevantMessages = messages.filter((msg) => msg.ruleId === "sort-imports");
