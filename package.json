@@ -19,11 +19,15 @@
   "peerDependencies": {
     "@eslint/js": ">=10",
     "@stylistic/eslint-plugin": ">=4",
+    "eslint-plugin-jsdoc": ">=62",
+    "eslint-plugin-n": ">=17",
     "eslint": ">=10"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@stylistic/eslint-plugin": "^4.4.1",
+    "eslint-plugin-jsdoc": "^62.7.0",
+    "eslint-plugin-n": "^17.0.0",
     "eslint": "^10.0.0",
     "mocha": "^10.0.0"
   }

@@ -1,12 +1,32 @@
 const os = require("os");
 const js = require("@eslint/js");
 const stylistic = require("@stylistic/eslint-plugin");
+const nodePlugin = require("eslint-plugin-n");
+const jsdoc = require("eslint-plugin-jsdoc");
 
 module.exports = [
   js.configs.recommended,
   {
     plugins: {
       "@stylistic": stylistic,
+      n: nodePlugin,
+      jsdoc,
+    },
+    languageOptions: {
+      globals: {
+        __dirname: "readonly",
+        __filename: "readonly",
+        exports: "readonly",
+        module: "readonly",
+        require: "readonly",
+        process: "readonly",
+        setTimeout: "readonly",
+        setInterval: "readonly",
+        setImmediate: "readonly",
+        clearTimeout: "readonly",
+        clearInterval: "readonly",
+        clearImmediate: "readonly",
+      },
     },
     rules: {
       // ── ESLint core rules ────────────────────────────────────────────
@@ -16,6 +36,7 @@ module.exports = [
       "arrow-body-style": ["error", "as-needed"],
       "block-scoped-var": "error",
       camelcase: "error",
+      "capitalized-comments": "off",
       "class-methods-use-this": "error",
       complexity: "error",
       "consistent-return": "off",
@@ -37,8 +58,6 @@ module.exports = [
       "max-len": "off",
       "max-lines": "off",
       "max-nested-callbacks": "error",
-      // This requires too much refactoring to do at the moment, so leaving
-      // as a warning until we come back and focus on eslint unification
       "max-params": ["warn", 5],
       "max-statements": "off",
       "new-cap": "error",
@@ -84,6 +103,7 @@ module.exports = [
       ],
       "no-multi-assign": "off",
       "no-multi-str": "error",
+      "no-global-assign": "error",
       "no-negated-condition": "off",
       "no-nested-ternary": "off",
       "no-new": "error",
@@ -110,6 +130,7 @@ module.exports = [
       "no-ternary": "off",
       "no-throw-literal": "error",
       "no-undef-init": "error",
+      "no-unsafe-negation": "error",
       "no-undefined": "error",
       "no-underscore-dangle": "off",
       "no-unmodified-loop-condition": "error",
@@ -155,6 +176,26 @@ module.exports = [
       "vars-on-top": "error",
       "wrap-regex": "off",
       yoda: ["error", "never"],
+
+      // ── eslint-plugin-n rules (moved from ESLint core) ───────────────
+
+      "n/callback-return": "off",
+      "n/global-require": "error",
+      "n/handle-callback-err": "error",
+      "n/no-mixed-requires": "off",
+      "n/no-new-require": "error",
+      "n/no-path-concat": "error",
+      "n/no-process-env": "error",
+      "n/no-process-exit": "error",
+      "n/no-restricted-require": "error",
+      "n/no-sync": "error",
+
+      // ── eslint-plugin-jsdoc rules (replacements for removed core rules) ─
+
+      "jsdoc/require-jsdoc": "off",
+      "jsdoc/check-tag-names": "off",
+      "jsdoc/require-param-description": "off",
+      "jsdoc/require-returns-description": "off",
 
       // ── @stylistic rules (moved from ESLint core in v8.53.0) ─────────
 
