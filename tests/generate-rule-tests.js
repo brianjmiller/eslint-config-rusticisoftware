@@ -58,10 +58,9 @@ const findRuleConfig = function (configArray, ruleName) {
 
         return entries.length > 0 ? entries : null;
     },
-
     /**
- * Serialise an object to JavaScript code without quotes on keys (single line)
- */
+     * Serialise an object to JavaScript code without quotes on keys (single line)
+     */
     serialiseObject = function (obj) {
         if (obj === null || typeof obj === "undefined") {
             return String(obj);
@@ -84,11 +83,11 @@ const findRuleConfig = function (configArray, ruleName) {
     },
 
     /**
- * Map legacy parserOptions to flat-config languageOptions properties.
- * - sourceType / ecmaVersion map directly to languageOptions
- * - ecmaFeatures maps to languageOptions.parserOptions.ecmaFeatures
- * Returns a string of additional key: value pairs for a languageOptions object.
- */
+     * Map legacy parserOptions to flat-config languageOptions properties.
+     * - sourceType / ecmaVersion map directly to languageOptions
+     * - ecmaFeatures maps to languageOptions.parserOptions.ecmaFeatures
+     * Returns a string of additional key: value pairs for a languageOptions object.
+     */
     buildLanguageOptionsStr = function (parserOptions) {
         const parts = [];
 
@@ -110,8 +109,8 @@ const findRuleConfig = function (configArray, ruleName) {
     },
 
     /**
- * Generate a test file for a single rule using Linter.verify()
- */
+     * Generate a test file for a single rule using Linter.verify()
+     */
     generateTestFile = function (ruleName, category) {
     // index.js exports a flat-config array; rules live in the second element
         // eslint-disable-next-line n/global-require
@@ -139,8 +138,7 @@ const findRuleConfig = function (configArray, ruleName) {
             validTestsCode = testCases.valid
                 .map((test, index) => {
                     const code = typeof test === "string" ? test : test.code,
-                        hasCustomParser
-                        = typeof test === "object" && test.parserOptions,
+                        hasCustomParser = typeof test === "object" && test.parserOptions,
                         configVar = hasCustomParser ? "testConfig" : "config",
                         // Map legacy parserOptions keys to flat-config languageOptions
                         languageOptionsStr = hasCustomParser
@@ -293,8 +291,8 @@ ${invalidTestsCode}
     },
 
     /**
- * Generate test files for all rules
- */
+     * Generate test files for all rules
+     */
     generateAllTests = function () {
         const legacyEntries = getLegacyRuleEntries(),
             ruleEntries = legacyEntries || getAllRules().map((ruleName) => ({
