@@ -112,8 +112,20 @@ const {LEGACY_TO_CURRENT} = require("./rule-mapping"),
 
     // Get all rules from config
     getAllRules = function () {
-        // index.js exports a flat-config array; rules live in the second element
-        return Object.keys(config[1].rules).sort();
+        // index.js exports a flat-config array; the base rules live in the
+        // second element and TypeScript-specific overrides in the third.
+        // We collect rules from all config entries that define them.
+        const allRules = new Set();
+
+        config.forEach((entry) => {
+            if (entry && entry.rules) {
+                Object.keys(entry.rules).forEach((rule) => {
+                    allRules.add(rule);
+                });
+            }
+        });
+
+        return Array.from(allRules).sort();
     },
 
     // Categorise all rules
