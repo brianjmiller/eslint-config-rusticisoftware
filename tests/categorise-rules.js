@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/* global console */
+
 /**
  * Categorise ESLint rules into style vs lint
  * Based on: https://eslint.org/docs/latest/rules/
@@ -90,60 +92,70 @@ const STYLISTIC_RULES = new Set([
     "one-var-declaration-per-line",
     "template-curly-spacing",
     "unicode-bom",
-    "yield-star-spacing",
+    "yield-star-spacing"
 ]);
 
-// Rules that are linting (logic/best practices)
-// Everything else is a linting rule
-function categoriseRule(ruleName) {
-    return STYLISTIC_RULES.has(ruleName) ? "style" : "lint";
-}
+const {LEGACY_TO_CURRENT} = require("./rule-mapping"),
+    config = require("../index.js"),
 
-// Get all rules from config
-function getAllRules() {
-    const config = require("../index.js");
+    // Rules that are linting (logic/best practices)
+    // Everything else is a linting rule
+    categoriseRule = function (ruleName) {
+        const mappedRule = LEGACY_TO_CURRENT[ruleName] || ruleName,
+            // Rules from @stylistic/eslint-plugin are prefixed with "@stylistic/"
+            bareName = mappedRule.startsWith("@stylistic/")
+                ? mappedRule.slice("@stylistic/".length)
+                : mappedRule;
 
-    return Object.keys(config.rules).sort();
-}
+        return STYLISTIC_RULES.has(bareName) ? "style" : "lint";
+    },
 
-// Categorise all rules
-function categoriseAllRules() {
-    const allRules = getAllRules(),
-        categories = {
-            style: [],
-            lint: [],
-        };
+    // Get all rules from config
+    getAllRules = function () {
+        // index.js exports a flat-config array; rules live in the second element
+        return Object.keys(config[1].rules).sort();
+    },
 
-    allRules.forEach((rule) => {
-        const category = categoriseRule(rule);
+    // Categorise all rules
+    categoriseAllRules = function () {
+        const allRules = getAllRules(),
+            categories = {
+                style: [],
+                lint: []
+            };
 
-        categories[category].push(rule);
-    });
+        allRules.forEach((rule) => {
+            const category = categoriseRule(rule);
 
-    return categories;
-}
+            categories[category].push(rule);
+        });
 
-// Print categorization
-function printCategorization() {
-    const categories = categoriseAllRules();
+        return categories;
+    },
 
-    console.log("Style Rules (Formatting):", categories.style.length);
-    console.log("─".repeat(50));
-    categories.style.forEach((rule) => console.log(`  ${rule}`));
+    SEPARATOR_LEN = 50,
 
-    console.log(
-        "\n\nLint Rules (Logic/Best Practices):",
-        categories.lint.length,
-    );
-    console.log("─".repeat(50));
-    categories.lint.forEach((rule) => console.log(`  ${rule}`));
+    // Print categorization
+    printCategorization = function () {
+        const categories = categoriseAllRules();
 
-    console.log(
-        `\n\nTotal: ${categories.style.length + categories.lint.length} rules`,
-    );
-    console.log(`Style: ${categories.style.length}`);
-    console.log(`Lint:  ${categories.lint.length}`);
-}
+        console.log("Style Rules (Formatting):", categories.style.length);
+        console.log("─".repeat(SEPARATOR_LEN));
+        categories.style.forEach((rule) => console.log(`  ${rule}`));
+
+        console.log(
+            "\n\nLint Rules (Logic/Best Practices):",
+            categories.lint.length
+        );
+        console.log("─".repeat(SEPARATOR_LEN));
+        categories.lint.forEach((rule) => console.log(`  ${rule}`));
+
+        console.log(
+            `\n\nTotal: ${categories.style.length + categories.lint.length} rules`
+        );
+        console.log(`Style: ${categories.style.length}`);
+        console.log(`Lint:  ${categories.lint.length}`);
+    };
 
 if (require.main === module) {
     printCategorization();
@@ -153,5 +165,5 @@ module.exports = {
     STYLISTIC_RULES,
     categoriseRule,
     categoriseAllRules,
-    getAllRules,
+    getAllRules
 };

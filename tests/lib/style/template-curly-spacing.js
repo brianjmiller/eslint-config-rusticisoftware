@@ -6,32 +6,34 @@
  * using Linter.verify() to ensure the configuration is correct.
  */
 
-const {Linter} = require("eslint"),
+ const {Linter} = require("eslint"),
     assert = require("assert"),
     baseConfig = require("../../../index.js"),
 
-    // Enhance config with necessary parserOptions for Linter.verify()
-    config = {
-        ...baseConfig,
-        parserOptions: {
-            ecmaVersion: 2021,
-            sourceType: "script"
-        }
-    };
+    // Extend the flat-config array with languageOptions for Linter.verify()
+     config = [
+         ...baseConfig,
+         {
+             languageOptions: {
+                 ecmaVersion: 2021,
+                 sourceType: "script",
+             },
+         }
+     ];
 
-describe("template-curly-spacing", function () {
+    describe("template-curly-spacing", function () {
     const linter = new Linter();
 
     describe("valid code", function () {
         it("valid case 1", function () {
             const code = "const str = `hello ${name}`;",
                 messages = linter.verify(code, config),
-                relevantMessages = messages.filter((msg) => msg.ruleId === "template-curly-spacing");
+                relevantMessages = messages.filter((msg) => msg.ruleId === "@stylistic/template-curly-spacing");
 
             assert.strictEqual(
                 relevantMessages.length,
                 0,
-                `Expected no errors for "template-curly-spacing", but got: ${relevantMessages.map((m) => m.message).join(", ")}`
+                `Expected no errors for "@stylistic/template-curly-spacing", but got: ${relevantMessages.map((m) => m.message).join(", ")}`
             );
         });
     });
@@ -40,12 +42,12 @@ describe("template-curly-spacing", function () {
         it("invalid case 1", function () {
             const code = "const str = `hello ${ name }`;",
                 messages = linter.verify(code, config),
-                relevantMessages = messages.filter((msg) => msg.ruleId === "template-curly-spacing");
+                relevantMessages = messages.filter((msg) => msg.ruleId === "@stylistic/template-curly-spacing");
 
             assert.ok(
                 // eslint-disable-next-line no-magic-numbers
                 relevantMessages.length >= 2,
-                `Expected at least 2 error(s) for "template-curly-spacing", but got ${relevantMessages.length}`
+                `Expected at least 2 error(s) for "@stylistic/template-curly-spacing", but got ${relevantMessages.length}`
             );
         });
     });

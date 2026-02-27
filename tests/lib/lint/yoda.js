@@ -6,20 +6,22 @@
  * using Linter.verify() to ensure the configuration is correct.
  */
 
-const {Linter} = require("eslint"),
+ const {Linter} = require("eslint"),
     assert = require("assert"),
     baseConfig = require("../../../index.js"),
 
-    // Enhance config with necessary parserOptions for Linter.verify()
-    config = {
-        ...baseConfig,
-        parserOptions: {
-            ecmaVersion: 2021,
-            sourceType: "script"
-        }
-    };
+    // Extend the flat-config array with languageOptions for Linter.verify()
+     config = [
+         ...baseConfig,
+         {
+             languageOptions: {
+                 ecmaVersion: 2021,
+                 sourceType: "script",
+             },
+         }
+     ];
 
-describe("yoda", function () {
+    describe("yoda", function () {
     const linter = new Linter();
 
     describe("valid code", function () {

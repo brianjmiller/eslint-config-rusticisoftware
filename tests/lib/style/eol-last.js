@@ -6,32 +6,34 @@
  * using Linter.verify() to ensure the configuration is correct.
  */
 
-const {Linter} = require("eslint"),
+ const {Linter} = require("eslint"),
     assert = require("assert"),
     baseConfig = require("../../../index.js"),
 
-    // Enhance config with necessary parserOptions for Linter.verify()
-    config = {
-        ...baseConfig,
-        parserOptions: {
-            ecmaVersion: 2021,
-            sourceType: "script"
-        }
-    };
+    // Extend the flat-config array with languageOptions for Linter.verify()
+     config = [
+         ...baseConfig,
+         {
+             languageOptions: {
+                 ecmaVersion: 2021,
+                 sourceType: "script",
+             },
+         }
+     ];
 
-describe("eol-last", function () {
+    describe("eol-last", function () {
     const linter = new Linter();
 
     describe("valid code", function () {
         it("valid case 1", function () {
             const code = "const x = 1;\n",
                 messages = linter.verify(code, config),
-                relevantMessages = messages.filter((msg) => msg.ruleId === "eol-last");
+                relevantMessages = messages.filter((msg) => msg.ruleId === "@stylistic/eol-last");
 
             assert.strictEqual(
                 relevantMessages.length,
                 0,
-                `Expected no errors for "eol-last", but got: ${relevantMessages.map((m) => m.message).join(", ")}`
+                `Expected no errors for "@stylistic/eol-last", but got: ${relevantMessages.map((m) => m.message).join(", ")}`
             );
         });
     });
@@ -40,12 +42,12 @@ describe("eol-last", function () {
         it("invalid case 1", function () {
             const code = "const x = 1;",
                 messages = linter.verify(code, config),
-                relevantMessages = messages.filter((msg) => msg.ruleId === "eol-last");
+                relevantMessages = messages.filter((msg) => msg.ruleId === "@stylistic/eol-last");
 
             assert.ok(
                 // eslint-disable-next-line no-magic-numbers
                 relevantMessages.length >= 1,
-                `Expected at least 1 error(s) for "eol-last", but got ${relevantMessages.length}`
+                `Expected at least 1 error(s) for "@stylistic/eol-last", but got ${relevantMessages.length}`
             );
         });
     });
