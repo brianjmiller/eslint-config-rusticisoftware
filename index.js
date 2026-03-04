@@ -2,7 +2,8 @@ const os = require("os"),
     js = require("@eslint/js"),
     stylistic = require("@stylistic/eslint-plugin"),
     nodePlugin = require("eslint-plugin-n"),
-    jsdoc = require("eslint-plugin-jsdoc");
+    jsdoc = require("eslint-plugin-jsdoc"),
+    tseslint = require("typescript-eslint");
 
 module.exports = [
     js.configs.recommended,
@@ -319,6 +320,108 @@ module.exports = [
             "@stylistic/template-tag-spacing": "error",
             "@stylistic/wrap-iife": "error",
             "@stylistic/yield-star-spacing": "error"
+        }
+    },
+
+    // ── TypeScript-specific rules (*.ts, *.tsx only)
+
+    {
+        files: ["**/*.ts", "**/*.tsx"],
+        languageOptions: {
+            parser: tseslint.parser,
+            parserOptions: {
+                projectService: true
+            }
+        },
+        plugins: {
+            "@typescript-eslint": tseslint.plugin
+        },
+        rules: {
+            // ── Core rules disabled in favour of @typescript-eslint extensions
+            //
+            // Each pair disables the core rule (which cannot parse TS syntax
+            // correctly) and enables its type-aware replacement with the same
+            // options that the base config uses.
+
+            "class-methods-use-this": "off",
+            "@typescript-eslint/class-methods-use-this": "error",
+
+            "dot-notation": "off",
+            "@typescript-eslint/dot-notation": "error",
+
+            "init-declarations": "off",
+            "@typescript-eslint/init-declarations": "off",
+
+            "no-array-constructor": "off",
+            "@typescript-eslint/no-array-constructor": "error",
+
+            "no-empty-function": "off",
+            "@typescript-eslint/no-empty-function": "error",
+
+            "no-implied-eval": "off",
+            "@typescript-eslint/no-implied-eval": "error",
+
+            "no-invalid-this": "off",
+            "@typescript-eslint/no-invalid-this": "error",
+
+            "no-loop-func": "off",
+            "@typescript-eslint/no-loop-func": "error",
+
+            "no-magic-numbers": "off",
+            "@typescript-eslint/no-magic-numbers": [
+                "error",
+                {
+                    ignore: [
+                        -1, 0, 1,
+                        200,
+                        204, 302, 400, 403, 404, 500
+                    ],
+                    ignoreArrayIndexes: true,
+                    ignoreEnums: true,
+                    ignoreNumericLiteralTypes: true,
+                    ignoreReadonlyClassProperties: true,
+                    ignoreTypeIndexes: true
+                }
+            ],
+
+            "no-shadow": "off",
+            "@typescript-eslint/no-shadow": "off",
+
+            "no-throw-literal": "off",
+            "@typescript-eslint/only-throw-error": "error",
+
+            "no-unused-expressions": "off",
+            "@typescript-eslint/no-unused-expressions": "error",
+
+            "no-use-before-define": "off",
+            "@typescript-eslint/no-use-before-define": "error",
+
+            "no-useless-constructor": "off",
+            "@typescript-eslint/no-useless-constructor": "error",
+
+            "no-return-await": "off",
+            "@typescript-eslint/return-await": "error",
+
+            "require-await": "off",
+            "@typescript-eslint/require-await": "error",
+
+            "prefer-promise-reject-errors": "off",
+            "@typescript-eslint/prefer-promise-reject-errors": "error",
+
+            // TypeScript's own compiler handles these checks natively.
+
+            "no-undef": "off",
+            strict: "off",
+            "no-duplicate-imports": "off",
+            "no-undefined": "off",
+
+            // JSDoc rules that don't understand TypeScript syntax.
+
+            "jsdoc/require-jsdoc": "off",
+            "jsdoc/require-param-description": "off",
+            "jsdoc/require-returns-description": "off",
+            "jsdoc/require-param-type": "off",
+            "jsdoc/require-returns-type": "off"
         }
     }
 ];
