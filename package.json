@@ -18,7 +18,7 @@
   "license": "ISC",
   "peerDependencies": {
     "@eslint/js": ">=10",
-    "@stylistic/eslint-plugin": ">=4",
+    "@stylistic/eslint-plugin": ">=5",
     "eslint": ">=10",
     "eslint-plugin-jsdoc": ">=62",
     "eslint-plugin-n": ">=17",
