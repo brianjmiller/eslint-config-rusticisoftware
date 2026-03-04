@@ -408,6 +408,12 @@ module.exports = [
             "prefer-promise-reject-errors": "off",
             "@typescript-eslint/prefer-promise-reject-errors": "error",
 
+
+            // Rules that don't play nicely with TypeScript
+            
+            "func-style": "off",
+            "sort-imports": "off",
+
             // TypeScript's own compiler handles these checks natively.
 
             "no-undef": "off",
