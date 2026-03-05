@@ -74,7 +74,12 @@ const {execSync} = require("child_process"),
     };
 
 if (require.main === module) {
-    runTests();
+    try {
+        runTests();
+    }
+    catch {
+        process.exit(1);
+    }
 }
 
 module.exports = {runTests};
