@@ -82,7 +82,8 @@ const LEGACY_TO_CURRENT = {
     INTENTIONALLY_OMITTED = new Set([
         "lines-around-comment",
         "multiline-ternary",
-        "newline-per-chained-call"
+        "newline-per-chained-call",
+        "prefer-reflect"
     ]);
 
 module.exports = {LEGACY_TO_CURRENT, INTENTIONALLY_OMITTED};
